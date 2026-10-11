@@ -1,0 +1,49 @@
+import functools
+import time
+ 
+ 
+def hamle_sayaci():
+    """Her çağrıldığında bir artan sayaç fonksiyonu döndürür (closure)."""
+    sayac = 0
+ 
+    def say() -> int:
+        nonlocal sayac
+        sayac += 1
+        return sayac
+ 
+    return say
+ 
+ 
+def en_bagli_gezegenler(galaksi: dict) -> list[str]:
+    """Gezegenleri bağlantı sayısına göre azalan, eşitlikte alfabetik sıralar."""
+    return sorted(
+        galaksi["gezegenler"],
+        key=lambda gezegen: (-len(galaksi["baglantilar"][gezegen]), gezegen),
+    )
+ 
+ 
+def sure_olc(fonksiyon):
+    """Bonus: fonksiyonun çalışma süresini yazan bir sarmalayıcı döndürür."""
+ 
+    @functools.wraps(fonksiyon)
+    def sarmalayici(*args, **kwargs):
+        baslangic = time.perf_counter()
+        sonuc = fonksiyon(*args, **kwargs)
+        gecen = time.perf_counter() - baslangic
+        print(f"{fonksiyon.__name__} {gecen:.6f} sn sürdü")
+        return sonuc
+ 
+    return sarmalayici
+ 
+ 
+if __name__ == "__main__":
+    import json
+    from pathlib import Path
+ 
+    from uzay_oyunu.oyun import galaksi_kur
+ 
+    veri = json.loads((Path(__file__).parent / "galaksi.json").read_text(encoding="utf-8"))
+    g = galaksi_kur(**veri)
+    en_bagli_gezegenler = sure_olc(en_bagli_gezegenler)
+    print(en_bagli_gezegenler(g))
+ 
