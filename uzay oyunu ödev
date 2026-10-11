@@ -1,0 +1,255 @@
+from uzay_oyunu.oyun import envanter_metni, hedef_menusu
+ 
+ 
+def test_envanter_kredi_ve_pilot():
+    assert envanter_metni(True, False, True) == "Sende: bol kredi, yetenekli bir pilot"
+ 
+ 
+def test_envanter_bos():
+    assert envanter_metni(False, False, False) == ""
+ 
+ 
+def test_envanter_sadece_kredi():
+    assert envanter_metni(True, False, False) == "Sende: bol kredi"
+ 
+ 
+def test_hedef_menusu_numarali():
+    beklenen = "Nereye gitmek istersin?\n[1] centauri\n[2] sirius"
+    assert hedef_menusu(["centauri", "sirius"]) == beklenen
+ 
+ 
+def test_hedef_menusu_print_etmez(capsys):
+    hedef_menusu(["centauri"])
+    assert capsys.readouterr().out == ""
+
+def gorev_kaydi(baslik: str, *adimlar: str, oncelik: str = "normal", **ekler: str) -> str:
+    """Bir görev kaydını metin olarak döndürür.
+ 
+    adimlar: istenen sayıda adım metni (konumsal).
+    oncelik: yalnızca adlı argüman olarak verilebilir.
+    ekler: sorumlu gibi ek bilgiler (adlı argümanlar).
+    """
+    satirlar = [f"[{oncelik.upper()}] {baslik}"]
+    for sira, adim in enumerate(adimlar, start=1):
+        satirlar.append(f"  {sira}. {adim}")
+    for anahtar, deger in ekler.items():
+        satirlar.append(f"  {anahtar}: {deger}")
+    return "\n".join(satirlar)
+ 
+ 
+if __name__ == "__main__":
+    # 1) Argümanları tek tek vererek
+    print(
+        gorev_kaydi(
+            "Kara deliğe atla",
+            "Kredi kazan",
+            "Pilot bul",
+            "Hiperdrive al",
+            oncelik="yüksek",
+            sorumlu="Ayşe",
+        )
+    )
+ 
+    # 2) Liste (*) ve sözlük (**) açarak
+    adimlar = ["Kredi kazan", "Pilot bul", "Hiperdrive al"]
+    ekler = {"sorumlu": "Ayşe"}
+    print(gorev_kaydi("Kara deliğe atla", *adimlar, oncelik="yüksek", **ekler))
+ import functools
+import time
+ 
+ 
+def hamle_sayaci():
+    """Her çağrıldığında bir artan sayaç fonksiyonu döndürür (closure)."""
+    sayac = 0
+ 
+    def say() -> int:
+        nonlocal sayac
+        sayac += 1
+        return sayac
+ 
+    return say
+ 
+ 
+def en_bagli_gezegenler(galaksi: dict) -> list[str]:
+    """Gezegenleri bağlantı sayısına göre azalan, eşitlikte alfabetik sıralar."""
+    return sorted(
+        galaksi["gezegenler"],
+        key=lambda gezegen: (-len(galaksi["baglantilar"][gezegen]), gezegen),
+    )
+ 
+ 
+def sure_olc(fonksiyon):
+    """Bonus: fonksiyonun çalışma süresini yazan bir sarmalayıcı döndürür."""
+ 
+    @functools.wraps(fonksiyon)
+    def sarmalayici(*args, **kwargs):
+        baslangic = time.perf_counter()
+        sonuc = fonksiyon(*args, **kwargs)
+        gecen = time.perf_counter() - baslangic
+        print(f"{fonksiyon.__name__} {gecen:.6f} sn sürdü")
+        return sonuc
+ 
+    return sarmalayici
+ 
+ 
+if __name__ == "__main__":
+    import json
+    from pathlib import Path
+ 
+    from uzay_oyunu.oyun import galaksi_kur
+ 
+    veri = json.loads((Path(__file__).parent / "galaksi.json").read_text(encoding="utf-8"))
+    g = galaksi_kur(**veri)
+    en_bagli_gezegenler = sure_olc(en_bagli_gezegenler)
+    print(en_bagli_gezegenler(g))
+ {
+  "gezegenler": [
+    "dünya",
+    "centauri",
+    "sirius",
+    "orion",
+    "kara_delik"
+  ],
+  "baglantilar": {
+    "dünya": [
+      "centauri",
+      "sirius",
+      "orion"
+    ],
+    "centauri": [
+      "dünya",
+      "sirius",
+      "orion"
+    ],
+    "sirius": [
+      "dünya",
+      "centauri",
+      "orion",
+      "kara_delik"
+    ],
+    "orion": [
+      "sirius",
+      "centauri"
+    ],
+    "kara_delik": [
+      "sirius"
+    ]
+  },
+  "baslangic": "dünya",
+  "yakit": 100
+}
+from uzay_oyunu.kayit import gorev_kaydi
+ 
+BEKLENEN = (
+    "[YÜKSEK] Kara deliğe atla\n"
+    "  1. Kredi kazan\n"
+    "  2. Pilot bul\n"
+    "  3. Hiperdrive al\n"
+    "  sorumlu: Ayşe"
+)
+ 
+ 
+def test_dogrudan_cagri():
+    metin = gorev_kaydi(
+        "Kara deliğe atla", "Kredi kazan", "Pilot bul", "Hiperdrive al",
+        oncelik="yüksek", sorumlu="Ayşe",
+    )
+    assert metin == BEKLENEN
+ 
+ 
+def test_liste_ve_sozluk_acarak_ayni_sonuc():
+    adimlar = ["Kredi kazan", "Pilot bul", "Hiperdrive al"]
+    ekler = {"sorumlu": "Ayşe"}
+    metin = gorev_kaydi("Kara deliğe atla", *adimlar, oncelik="yüksek", **ekler)
+    assert metin == BEKLENEN
+ 
+ 
+def test_oncelik_yalnizca_adli():
+    # "yüksek" konumsal verilirse öncelik olmaz, bir adım sayılır.
+    metin = gorev_kaydi("Görev", "a", "yüksek")
+    assert metin.startswith("[NORMAL]")
+    assert "2. yüksek" in metin
+ import json
+from pathlib import Path
+ 
+import pytest
+ 
+from uzay_oyunu.oyun import galaksi_kur
+ 
+YOL = Path(__file__).parent.parent / "uzay_oyunu" / "galaksi.json"
+ 
+ 
+def veri_yukle() -> dict:
+    with open(YOL, encoding="utf-8") as dosya:
+        return json.load(dosya)
+ 
+ 
+def test_json_ile_kurulum():
+    g = galaksi_kur(**veri_yukle())
+    assert g["konum"] == "dünya"
+    assert g["yakit"] == 100
+ 
+ 
+def test_varsayilan_yakit_50():
+    assert galaksi_kur(["mars"], {"mars": []}, "mars")["yakit"] == 50
+ 
+ 
+def test_gecersiz_baslangic_value_error():
+    with pytest.raises(ValueError):
+        galaksi_kur(["mars"], {"mars": []}, "venüs")
+ 
+ 
+def test_her_baglanti_gecerli_gezegene_gider():
+    veri = veri_yukle()
+    for hedefler in veri["baglantilar"].values():
+        assert set(hedefler) <= set(veri["gezegenler"])
+ from uzay_oyunu.oyun import yakit_ekle
+ 
+ 
+def test_yakit_ekle_depo_cagrilar_arasinda_paylasilmaz():
+    # Hatalı sürümde (depo=[]) liste fonksiyon tanımlanırken bir kez oluşur
+    # ve çağrılar arasında paylaşılır; ikinci çağrı [5, 7] döndürür.
+    yakit_ekle(5)
+    assert yakit_ekle(7) == [7]
+ 
+ 
+def test_yakit_ekle_verilen_depoyu_kullanir():
+    depo = [1]
+    assert yakit_ekle(2, depo) == [1, 2]
+ from uzay_oyunu.araclar import en_bagli_gezegenler, hamle_sayaci, sure_olc
+ 
+GALAKSI = {
+    "gezegenler": ["dünya", "centauri", "sirius", "orion", "kara_delik"],
+    "baglantilar": {
+        "dünya": ["centauri", "sirius", "orion"],
+        "centauri": ["dünya", "sirius", "orion"],
+        "sirius": ["dünya", "centauri", "orion", "kara_delik"],
+        "orion": ["sirius", "centauri"],
+        "kara_delik": ["sirius"],
+    },
+}
+ 
+ 
+def test_sayac_birer_birer_artar():
+    say = hamle_sayaci()
+    assert [say(), say(), say()] == [1, 2, 3]
+ 
+ 
+def test_sayaclar_birbirinden_bagimsiz():
+    a, b = hamle_sayaci(), hamle_sayaci()
+    a()
+    a()
+    assert b() == 1
+ 
+ 
+def test_en_bagli_gezegenler_sirasi():
+    assert en_bagli_gezegenler(GALAKSI) == [
+        "sirius", "centauri", "dünya", "orion", "kara_delik",
+    ]
+ 
+ 
+def test_sure_olc_sonucu_degistirmez_ve_sure_yazar(capsys):
+    olcumlu = sure_olc(en_bagli_gezegenler)
+    assert olcumlu(GALAKSI) == en_bagli_gezegenler(GALAKSI)
+    assert "sn sürdü" in capsys.readouterr().out
+ 
